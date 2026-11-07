@@ -137,7 +137,6 @@ useEffect(() => {
 
   useEffect(() => { if (session?.user) loadMyClaims() }, [session?.user?.id, loadMyClaims])
   useEffect(() => { if (isStaff) loadStaffClaims() }, [isStaff, loadStaffClaims])
-  useEffect(() => { if (activeTab === 'Contact Officials' && session?.user) loadOfficeMessages() }, [activeTab, session?.user?.id, loadOfficeMessages])
     async function handleAuth(event) {
     event.preventDefault(); setBusy(true); setAuthError(''); setAuthMessage('')
     try {
@@ -380,6 +379,10 @@ useEffect(() => {
     } catch (error) { setNotice(`Could not load official messages: ${cleanError(error)}`) }
     finally { setOfficeLoading(false) }
   }, [session?.user?.id, isStaff])
+
+  useEffect(() => {
+    if (activeTab === 'Contact Officials' && session?.user) loadOfficeMessages()
+  }, [activeTab, session?.user?.id, loadOfficeMessages])
 
   async function submitOfficeMessage(event) {
     event.preventDefault()
