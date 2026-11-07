@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
+import './App.css'
 
 const CATEGORIES = ['Personal Items', 'Electronics', 'ID Cards', 'Stationery', 'Bags', 'Books', 'Keys', 'Other']
 const EMPTY_REPORT = { item_name: '', category: 'Personal Items', report_type: 'lost', campus_location: '', incident_date: '', description: '', photo: null }
 const dateText = value => value ? new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date not provided'
 const cleanError = error => error?.message || 'Something went wrong. Please try again.'
-
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-:root{font-family:'DM Sans',Arial,sans-serif;color:#17233b;background:#f4f7fc;font-synthesis:none;text-rendering:optimizeLegibility}*{box-sizing:border-box}body{margin:0;min-width:320px}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.fi{min-height:100vh;background:#f4f7fc}.fi button{border:0}.fi .btn{border-radius:11px;padding:11px 16px;font-weight:700;background:#173b76;color:white}.fi .btn.secondary{background:#eaf0fa;color:#173b76}.fi .btn.danger{background:#fff0f0;color:#b42318}.fi .btn.small{padding:8px 11px;font-size:12px}.fi .muted{color:#71809a}.fi .eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#6480aa}.fi .auth-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at top right,#dce9ff,transparent 40%),#f4f7fc}.fi .auth-card{width:min(460px,100%);background:white;padding:34px;border-radius:22px;box-shadow:0 18px 60px #1b37601a}.fi .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}.fi .brand-mark{width:44px;height:44px;border-radius:14px;background:#173b76;color:white;display:grid;place-items:center;font-weight:900;font-size:23px}.fi .brand h2{margin:0;font-size:20px;letter-spacing:-.7px}.fi .brand h2 span{color:#43bda3}.fi .brand small{font-size:9px;letter-spacing:1.7px;color:#8290a6;font-weight:800}.fi h1{font-size:27px;margin:8px 0}.fi .intro{color:#71809a;font-size:13px;line-height:1.6;margin-bottom:22px}.fi label{display:block;font-size:12px;font-weight:700;margin:13px 0 7px;color:#35445d}.fi input,.fi select,.fi textarea{width:100%;border:1px solid #dce3ef;border-radius:10px;padding:12px 13px;background:#fff;color:#17233b;outline:none}.fi input:focus,.fi select:focus,.fi textarea:focus{border-color:#527bc0;box-shadow:0 0 0 3px #527bc018}.fi textarea{min-height:90px;resize:vertical}.fi .full{width:100%;margin-top:18px}.fi .auth-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:17px;font-size:12px}.fi .link{background:none;color:#24569a;font-weight:700;padding:0}.fi .message{padding:11px 13px;border-radius:10px;font-size:12px;margin-top:13px;background:#edf8f3;color:#176b50}.fi .error{background:#fff0f0;color:#ad2929}.fi .shell{display:grid;grid-template-columns:245px 1fr;min-height:100vh}.fi .sidebar{background:#102b56;color:white;padding:25px 17px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}.fi .sidebar .brand{margin:0 7px 36px}.fi .sidebar .brand small{color:#9db1d1}.fi .side-label{font-size:9px;letter-spacing:1.7px;color:#91a6c7;font-weight:800;padding:0 12px 12px}.fi .nav{display:grid;gap:6px}.fi .nav button{background:transparent;color:#c4d1e5;text-align:left;padding:12px;border-radius:10px;font-size:13px;font-weight:600}.fi .nav button.active,.fi .nav button:hover{background:#ffffff18;color:white}.fi .side-bottom{margin-top:auto}.fi .help{padding:15px;background:#ffffff12;border-radius:13px;font-size:12px;line-height:1.5;color:#d3deee;margin-bottom:18px}.fi .user-mini{display:flex;gap:10px;align-items:center;padding:12px 5px;border-top:1px solid #ffffff20}.fi .avatar{width:37px;height:37px;border-radius:50%;display:grid;place-items:center;background:#d9e8ff;color:#173b76;font-weight:800;flex:none}.fi .user-mini strong{display:block;font-size:12px}.fi .user-mini small{font-size:10px;color:#aebfd8;display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis}.fi .main{padding:27px 34px;max-width:1500px;width:100%;margin:auto}.fi .topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}.fi .crumb{font-size:9px;letter-spacing:1.4px;color:#8190a8;font-weight:800}.fi .topbar h1{font-size:25px;margin:4px 0}.fi .top-right{display:flex;align-items:center;gap:12px}.fi .profile-btn{display:flex;align-items:center;gap:9px;background:white;padding:7px 12px;border-radius:12px;color:#24334b;box-shadow:0 4px 16px #24334b0b}.fi .profile-btn strong{font-size:12px}.fi .banner{background:linear-gradient(115deg,#173b76,#2863a9);border-radius:20px;color:white;padding:27px 30px;display:flex;justify-content:space-between;align-items:center;gap:20px;overflow:hidden}.fi .banner h2{font-size:29px;line-height:1.15;margin:9px 0}.fi .banner p{font-size:12px;color:#d6e4f8;max-width:460px;line-height:1.6}.fi .banner-art{font-size:70px;opacity:.9;padding:10px 35px}.fi .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.fi .stat{background:white;border:1px solid #edf0f6;border-radius:15px;padding:18px}.fi .stat span{font-size:11px;color:#73819a}.fi .stat strong{display:block;font-size:27px;margin:8px 0 3px}.fi .section{background:white;border:1px solid #edf0f6;border-radius:17px;padding:22px;margin-top:18px}.fi .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}.fi .section-head h2{font-size:18px;margin:4px 0}.fi .section-head p{font-size:11px;color:#8390a4;margin:0}.fi .toolbar{display:flex;gap:10px;margin-bottom:17px}.fi .toolbar input{flex:1}.fi .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.fi .item{border:1px solid #e8edf5;border-radius:14px;overflow:hidden;background:white}.fi .item-top{height:105px;background:#edf3fb;display:grid;place-items:center;position:relative;font-size:43px}.fi .pill{position:absolute;top:10px;right:10px;padding:5px 9px;border-radius:20px;font-size:9px;font-weight:800;background:#fff0e8;color:#ad592b}.fi .pill.found{background:#e7f8ef;color:#18794e}.fi .item-body{padding:14px}.fi .item-body h3{font-size:14px;margin:5px 0}.fi .item-body p{font-size:11px;color:#78869c;line-height:1.5;margin:5px 0}.fi .item-foot{border-top:1px solid #edf0f5;margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#8994a7}.fi .empty{padding:35px;text-align:center;color:#7c899e;font-size:13px}.fi .notice{padding:12px 15px;background:#e9f8f1;color:#176b50;border-radius:10px;margin:14px 0;font-size:12px}.fi .modal-bg{position:fixed;inset:0;background:#0b1d37a8;display:grid;place-items:center;padding:18px;z-index:20;overflow:auto}.fi .modal{background:white;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:18px;padding:24px}.fi .modal-head{display:flex;justify-content:space-between;align-items:center}.fi .modal-head h2{margin:4px 0 15px;font-size:20px}.fi .close{font-size:25px;background:#f0f3f8;border-radius:9px;width:34px;height:34px}.fi .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 13px}.fi .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fi .profile-field{padding:13px;background:#f5f7fb;border-radius:11px}.fi .profile-field small{display:block;color:#8290a5;font-size:10px}.fi .profile-field strong{display:block;font-size:13px;margin-top:5px;overflow-wrap:anywhere}.fi .table-wrap{overflow:auto}.fi table{border-collapse:collapse;width:100%;font-size:12px} .fi th,.fi td{text-align:left;padding:12px;border-bottom:1px solid #edf0f5;white-space:nowrap}.fi th{color:#78869c;font-size:10px;text-transform:uppercase;letter-spacing:.7px}.fi .actions{display:flex;gap:6px}.fi footer{padding:25px 0;color:#9aa5b6;font-size:10px;display:flex;justify-content:space-between;gap:10px}.fi .notice-line{font-size:11px;color:#8390a4;margin-top:10px;line-height:1.5}
-@media(max-width:1000px){.fi .shell{grid-template-columns:200px 1fr}.fi .main{padding:22px}.fi .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fi .stats{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px).fi .brand-logo {
-  width:52px  height: 52px;
-  object-fit: contain;
-  flex-shrink: 0;
-}{.fi .shell{display:block}2px;
- .fi .sidebar{position:static;height:auto;padding:14px}.fi .sidebar .brand{margin:0 5px 12px}.fi .side-label,.fi .help,.fi .user-mini{display:none}.fi .nav{display:flex;overflow:auto}.fi .nav button{white-space:nowrap;padding:9px}.fi .main{padding:16px}.fi .topbar{align-items:flex-start}.fi .topbar h1{font-size:21px}.fi .banner{padding:20px}.fi .banner-art{display:none}.fi .grid{grid-template-columns:1fr}.fi .toolbar{flex-wrap:wrap}.fi .toolbar input{flex-basis:100%}.fi .form-grid,.fi .profile-grid{grid-template-columns:1fr}.fi footer{flex-direction:column}}
-`
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -47,6 +36,11 @@ export default function App() {
   const [handoverNotes, setHandoverNotes] = useState('')
   const [adminUsers, setAdminUsers] = useState([])
   const [adminUsersError, setAdminUsersError] = useState('')
+  const [officeMessages, setOfficeMessages] = useState([])
+  const [officeLoading, setOfficeLoading] = useState(false)
+  const [officeForm, setOfficeForm] = useState({ department: 'Central Lost & Found Office', subject: '', message: '' })
+  const [replyDrafts, setReplyDrafts] = useState({})
+
 
   const isStaff = ['staff', 'admin'].includes(profile?.role)
   const isAdmin = profile?.role === 'admin'
@@ -63,23 +57,57 @@ export default function App() {
 
   const loadItems = useCallback(async () => {
     setItemsLoading(true); setItemsError('')
-    const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false })
-    if (error) { setItemsError(cleanError(error)); setItems([]) }
-    else setItems(data || [])
-    setItemsLoading(false)
+    try {
+      const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      const withImages = await Promise.all((data || []).map(async item => {
+        if (!item.photo_path) return { ...item, photo_url: null }
+        const { data: signed, error: imageError } = await supabase.storage.from('findit-items').createSignedUrl(item.photo_path, 3600)
+        if (imageError) {
+          console.warn('FINDIT photo URL error:', imageError.message, item.photo_path)
+          return { ...item, photo_url: null }
+        }
+        return { ...item, photo_url: signed?.signedUrl || null }
+      }))
+      setItems(withImages)
+    } catch (error) {
+      setItemsError(cleanError(error)); setItems([])
+    } finally { setItemsLoading(false) }
   }, [])
 
   const loadMyClaims = useCallback(async () => {
-    if (!session?.user) return
-    const { data, error } = await supabase.from('claims').select('*, items(item_name, campus_location, report_type)').eq('claimant_id', session.user.id).order('created_at', { ascending: false })
-    if (!error) setClaims(data || [])
+    const userId = session?.user?.id
+    if (!userId) { setClaims([]); return false }
+
+    const { data, error } = await supabase
+      .from('claims')
+      .select('*, items(item_name, campus_location, report_type, status)')
+      .eq('claimant_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setItemsError(`Your claims could not be loaded: ${cleanError(error)}`)
+      return false
+    }
+
+    setClaims(data || [])
+    return true
   }, [session?.user?.id])
 
   const loadStaffClaims = useCallback(async () => {
-    if (!isStaff) return
-    const { data, error } = await supabase.from('claims').select('*, items(item_name, campus_location, reporter_id)').order('created_at', { ascending: false })
-    if (!error) setStaffClaims(data || [])
-    else setItemsError(cleanError(error))
+    if (!isStaff) { setStaffClaims([]); return false }
+    const { data, error } = await supabase
+      .from('claims')
+      .select('*, items(item_name, campus_location, reporter_id)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      setItemsError(`Staff claims could not be loaded: ${cleanError(error)}`)
+      return false
+    }
+
+    setStaffClaims(data || [])
+    return true
   }, [isStaff])
 
 useEffect(() => {
@@ -109,6 +137,7 @@ useEffect(() => {
 
   useEffect(() => { if (session?.user) loadMyClaims() }, [session?.user?.id, loadMyClaims])
   useEffect(() => { if (isStaff) loadStaffClaims() }, [isStaff, loadStaffClaims])
+  useEffect(() => { if (activeTab === 'Contact Officials' && session?.user) loadOfficeMessages() }, [activeTab, session?.user?.id, loadOfficeMessages])
     async function handleAuth(event) {
     event.preventDefault(); setBusy(true); setAuthError(''); setAuthMessage('')
     try {
@@ -171,52 +200,160 @@ useEffect(() => {
     } catch (error) { setNotice(cleanError(error)) }
     finally { setSaving(false) }
   }
-   async function submitClaim(event) {
+  async function submitClaim(event) {
     event.preventDefault()
     if (!showClaim || !session?.user) return
-    setSaving(true); setNotice('')
-    const { error } = await supabase.from('claims').insert({ item_id: showClaim.id, claimant_id: session.user.id, claim_message: claimMessage.trim(), status: 'pending' })
-    setSaving(false)
-    if (error) setNotice(`Claim not submitted: ${cleanError(error)}`)
-    else { setShowClaim(null); setClaimMessage(''); setNotice('Your claim has been submitted for staff review.'); await loadMyClaims(); await loadStaffClaims() }
+
+    const itemId = showClaim.id
+    const userId = session.user.id
+    setSaving(true)
+    setNotice('')
+
+    try {
+      // Avoid creating a second claim for the same item from this account.
+      const { data: existingClaim, error: checkError } = await supabase
+        .from('claims')
+        .select('id, status')
+        .eq('item_id', itemId)
+        .eq('claimant_id', userId)
+        .maybeSingle()
+
+      if (checkError) throw checkError
+
+      if (existingClaim) {
+        setShowClaim(null)
+        setClaimMessage('')
+        await loadMyClaims()
+        setNotice(`You already submitted a claim for this item. Current status: ${existingClaim.status}.`)
+        return
+      }
+
+      const { error: insertError } = await supabase
+        .from('claims')
+        .insert({
+          item_id: itemId,
+          claimant_id: userId,
+          claim_message: claimMessage.trim(),
+          status: 'pending',
+        })
+
+      if (insertError) throw insertError
+
+      setShowClaim(null)
+      setClaimMessage('')
+      const refreshed = await loadMyClaims()
+      await loadStaffClaims()
+
+      setNotice(refreshed
+        ? 'Your claim has been submitted. You can track its status in My Claims.'
+        : 'Your claim was submitted, but the claim list could not refresh. Open My Claims and press Refresh.')
+    } catch (error) {
+      setNotice(`Claim not submitted: ${cleanError(error)}`)
+    } finally {
+      setSaving(false)
+    }
   }
 
+
   async function updateClaimStatus(claim, status) {
-    setSaving(true); setNotice('')
-    const { error } = await supabase.from('claims').update({ status }).eq('id', claim.id)
-    setSaving(false)
-    if (error) setNotice(`Could not update claim: ${cleanError(error)}`)
-    else { setNotice(`Claim ${status}.`); await loadStaffClaims(); await loadMyClaims() }
+    if (!isStaff || !['approved', 'rejected'].includes(status)) return
+    setSaving(true)
+    setNotice('')
+
+    try {
+      const { data, error } = await supabase
+        .from('claims')
+        .update({ status })
+        .eq('id', claim.id)
+        .select('id, status')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) throw new Error('No claim was updated. Check the staff UPDATE policy in Supabase.')
+
+      setNotice(`Claim ${status}. The student can see the updated status after refreshing My Claims.`)
+      await loadStaffClaims()
+    } catch (error) {
+      setNotice(`Could not update claim: ${cleanError(error)}`)
+    } finally {
+      setSaving(false)
+    }
   }
+
 
   async function createHandover(event) {
     event.preventDefault()
-    if (!reviewClaim || !session?.user) return
-    setSaving(true); setNotice('')
-    const { error } = await supabase.from('handovers').insert({
-      item_id: reviewClaim.item_id, claim_id: reviewClaim.id, handled_by: session.user.id,
-      storage_location: storageLocation.trim() || null, handover_notes: handoverNotes.trim() || null,
-      handed_over_at: new Date().toISOString(),
-    })
-    if (!error) {
-      await supabase.from('items').update({ status: 'ready_for_collection' }).eq('id', reviewClaim.item_id)
-      setNotice('Handover record created. Ask the student to confirm collection from My Claims.')
-      setReviewClaim(null); setStorageLocation(''); setHandoverNotes(''); await loadItems(); await loadStaffClaims()
-    } else setNotice(`Could not create handover: ${cleanError(error)}`)
-    setSaving(false)
+    if (!isStaff || !reviewClaim || !session?.user) return
+    if (reviewClaim.status !== 'approved') {
+      setNotice('Only an approved claim can be handed over.')
+      return
+    }
+
+    setSaving(true)
+    setNotice('')
+    try {
+      const { data: existing, error: lookupError } = await supabase
+        .from('handovers')
+        .select('id')
+        .eq('claim_id', reviewClaim.id)
+        .maybeSingle()
+      if (lookupError) throw lookupError
+      if (existing) throw new Error('A handover record already exists for this claim.')
+
+      const { error: handoverError } = await supabase.from('handovers').insert({
+        item_id: reviewClaim.item_id,
+        claim_id: reviewClaim.id,
+        handled_by: session.user.id,
+        storage_location: storageLocation.trim() || null,
+        handover_notes: handoverNotes.trim() || null,
+        handed_over_at: new Date().toISOString(),
+      })
+      if (handoverError) throw handoverError
+
+      const { error: itemError } = await supabase
+        .from('items')
+        .update({ status: 'ready_for_collection' })
+        .eq('id', reviewClaim.item_id)
+      if (itemError) {
+        setNotice(`Handover saved, but item status was not updated: ${cleanError(itemError)}`)
+      } else {
+        setNotice('Handover recorded. The student can now confirm collection in My Claims.')
+      }
+
+      setReviewClaim(null)
+      setStorageLocation('')
+      setHandoverNotes('')
+      await loadItems()
+      await loadStaffClaims()
+    } catch (error) {
+      setNotice(`Could not create handover: ${cleanError(error)}`)
+    } finally {
+      setSaving(false)
+    }
   }
+
   async function confirmCollection(claim) {
-    setSaving(true); setNotice('')
-    const { data: handover, error: findError } = await supabase.from('handovers').select('id').eq('claim_id', claim.id).maybeSingle()
-    if (findError || !handover) { setNotice(findError ? cleanError(findError) : 'The office has not recorded a handover for this claim yet.'); setSaving(false); return }
-    const { error } = await supabase.from('handovers').update({ student_confirmed_at: new Date().toISOString() }).eq('id', handover.id)
-    if (!error) {
-      await supabase.from('items').update({ status: 'returned' }).eq('id', claim.item_id)
+    if (!session?.user || claim.claimant_id !== session.user.id) return
+    setSaving(true)
+    setNotice('')
+
+    try {
+      // A database function verifies ownership and updates only the confirmation timestamp.
+      const { error } = await supabase.rpc('confirm_own_handover', {
+        p_claim_id: claim.id,
+      })
+      if (error) throw error
+
       setNotice('Collection confirmation submitted. Thank you!')
-      await loadItems(); await loadMyClaims()
-    } else setNotice(`Could not confirm collection: ${cleanError(error)}`)
-    setSaving(false)
+      await loadMyClaims()
+      await loadItems()
+    } catch (error) {
+      setNotice(`Could not confirm collection: ${cleanError(error)}`)
+    } finally {
+      setSaving(false)
+    }
   }
+
 
   async function loadAdminUsers() {
     setAdminUsersError('')
@@ -225,9 +362,57 @@ useEffect(() => {
   }
 
   async function changeUserRole(userId, role) {
+    if (!isAdmin || !['student', 'staff', 'admin'].includes(role) || userId === session?.user?.id) return
     const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
     if (error) setNotice(`Role update failed: ${cleanError(error)}`)
     else { setNotice('User role updated.'); await loadAdminUsers() }
+  }
+
+  const loadOfficeMessages = useCallback(async () => {
+    if (!session?.user) return
+    setOfficeLoading(true)
+    try {
+      let query = supabase.from('office_messages').select('*').order('created_at', { ascending: false })
+      if (!isStaff) query = query.eq('sender_id', session.user.id)
+      const { data, error } = await query
+      if (error) throw error
+      setOfficeMessages(data || [])
+    } catch (error) { setNotice(`Could not load official messages: ${cleanError(error)}`) }
+    finally { setOfficeLoading(false) }
+  }, [session?.user?.id, isStaff])
+
+  async function submitOfficeMessage(event) {
+    event.preventDefault()
+    if (!session?.user || !officeForm.subject.trim() || !officeForm.message.trim()) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('office_messages').insert({
+        sender_id: session.user.id, department: officeForm.department,
+        subject: officeForm.subject.trim(), message: officeForm.message.trim(), status: 'open'
+      })
+      if (error) throw error
+      setOfficeForm({ department: 'Central Lost & Found Office', subject: '', message: '' })
+      setNotice('Your message has been sent to campus officials.')
+      await loadOfficeMessages()
+    } catch (error) { setNotice(`Message not sent: ${cleanError(error)}`) }
+    finally { setSaving(false) }
+  }
+
+  async function replyOfficeMessage(messageId) {
+    if (!isStaff || !session?.user) return
+    const reply = (replyDrafts[messageId] || '').trim()
+    if (!reply) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('office_messages').update({
+        staff_reply: reply, replied_by: session.user.id, replied_at: new Date().toISOString(), status: 'answered'
+      }).eq('id', messageId)
+      if (error) throw error
+      setReplyDrafts(current => ({ ...current, [messageId]: '' }))
+      setNotice('Official reply sent.')
+      await loadOfficeMessages()
+    } catch (error) { setNotice(`Reply not sent: ${cleanError(error)}`) }
+    finally { setSaving(false) }
   }
 
   const visibleItems = useMemo(() => items.filter(item => {
@@ -241,9 +426,9 @@ const foundCount = items.filter(item => item.report_type === 'found').length
   const lostCount = items.filter(item => item.report_type === 'lost').length
   const myCount = items.filter(item => item.reporter_id === session?.user?.id).length
 
-  if (authLoading) return <div className="fi"><style>{CSS}</style><div className="auth-wrap"><div className="auth-card">Loading FINDIT and checking your session…</div></div></div>
+  if (authLoading) return <div className="fi"><div className="auth-wrap"><div className="auth-card">Loading FINDIT and checking your session…</div></div></div>
 
-  if (!session) return <div className="fi"><style>{CSS}</style><div className="auth-wrap"><form className="auth-card" onSubmit={handleAuth}>
+  if (!session) return <div className="fi"><div className="auth-wrap"><form className="auth-card" onSubmit={handleAuth}>
     <div className="brand"><div className="brand-mark">F</div><div><h2>SAVEETHA FINDIT<span>.</span></h2><small>LOST & FOUND · TOGETHER</small></div></div>
     <span className="eyebrow">CAMPUS LOST & FOUND</span>
     <h1>{authMode === 'signup' ? 'Create your account' : authMode === 'forgot' ? 'Reset your password' : authMode === 'reset' ? 'Choose a new password' : 'Welcome back'}</h1>
@@ -257,9 +442,9 @@ const foundCount = items.filter(item => item.report_type === 'found').length
     <p className="notice-line">Use only an email account you are authorised to access. Account verification and password reset emails are managed by Supabase Auth.</p>
   </form></div></div>
 
-  const navItems = ['Overview', 'Browse Items', 'My Reports', 'My Claims', ...(isStaff ? ['Staff Review'] : []), ...(isAdmin ? ['User Management'] : [])]
+  const navItems = ['Overview', 'Browse Items', 'My Reports', 'My Claims', 'Contact Officials', ...(isStaff ? ['Staff Review'] : []), ...(isAdmin ? ['User Management'] : [])]
   const profileName = profile?.full_name || session.user.user_metadata?.full_name || 'Campus User'
-  return <div className="fi"><style>{CSS}</style><div className="shell">
+  return <div className="fi"><div className="shell">
     <aside className="sidebar">
    <div className="brand">
   <img
@@ -273,7 +458,7 @@ const foundCount = items.filter(item => item.report_type === 'found').length
   </div>
 </div>
       <div className="side-label">CAMPUS MENU</div>
-      <nav className="nav">{navItems.map(name => <button key={name} className={activeTab === name ? 'active' : ''} onClick={() => { setActiveTab(name); setSearch(''); setFilter('All'); if (name === 'User Management') loadAdminUsers() }}>{name === 'Overview' ? '⌂' : name === 'Browse Items' ? '▦' : name === 'My Reports' ? '▤' : name === 'My Claims' ? '◇' : name === 'Staff Review' ? '✓' : '⚙'}　{name}</button>)}</nav>
+      <nav className="nav">{navItems.map(name => <button key={name} className={activeTab === name ? 'active' : ''} onClick={() => { setActiveTab(name); setSearch(''); setFilter('All'); if (name === 'User Management') loadAdminUsers(); if (name === 'Contact Officials') loadOfficeMessages() }}>{name === 'Overview' ? '⌂' : name === 'Browse Items' ? '▦' : name === 'My Reports' ? '▤' : name === 'My Claims' ? '◇' : name === 'Staff Review' ? '✓' : '⚙'}　{name}</button>)}</nav>
       <div className="side-bottom"><div className="help">Need assistance?<br/><strong>Central Lost & Found Office</strong><br/>Contact campus staff for collection support.</div><div className="user-mini"><div className="avatar">{profileName.charAt(0).toUpperCase()}</div><div><strong>{profileName}</strong><small>{session.user.email}</small></div></div></div>
     </aside>
 
@@ -285,10 +470,62 @@ const foundCount = items.filter(item => item.report_type === 'found').length
         {activeTab === 'Overview' && <section className="stats"><div className="stat"><span>Total reports</span><strong>{items.length}</strong><small className="muted">Campus reports</small></div><div className="stat"><span>Found items</span><strong>{foundCount}</strong><small className="muted">Reported as found</small></div><div className="stat"><span>Lost items</span><strong>{lostCount}</strong><small className="muted">Being searched for</small></div><div className="stat"><span>My reports</span><strong>{myCount}</strong><small className="muted">Your submissions</small></div></section>}
         <section className="section"><div className="section-head"><div><span className="eyebrow">CAMPUS COMMUNITY</span><h2>{activeTab === 'My Reports' ? 'My submissions' : activeTab === 'Browse Items' ? 'Browse campus items' : 'Recent item reports'}</h2><p>Search reports and contact the office through a claim request.</p></div><button className="btn" onClick={() => setShowReport(true)}>＋ New report</button></div>
           <div className="toolbar"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search item, category, description or location…"/><select value={filter} onChange={e => setFilter(e.target.value)}><option>All</option><option>Lost</option><option>Found</option></select><button className="btn secondary" onClick={loadItems} disabled={itemsLoading}>{itemsLoading ? 'Loading…' : '↻ Refresh'}</button></div>
-          {itemsLoading ? <div className="empty">Loading campus reports…</div> : visibleItems.length ? <div className="grid">{visibleItems.map(item => { const lost = item.report_type === 'lost'; const mine = item.reporter_id === session.user.id; return <article className="item" key={item.id}><div className="item-top"><span>{item.category === 'Electronics' ? '📱' : item.category === 'Bags' ? '🎒' : item.category === 'Books' ? '📚' : item.category === 'ID Cards' ? '🪪' : '🔎'}</span><span className={`pill ${lost ? '' : 'found'}`}>{lost ? 'LOST' : 'FOUND'}</span></div><div className="item-body"><span className="eyebrow">{item.category}</span><h3>{item.item_name}</h3><p>⌖ {item.campus_location}</p>{item.description && <p>{item.description}</p>}<div className="item-foot"><span>{dateText(item.incident_date || item.created_at)}</span><span>{(item.status || 'reported').replaceAll('_', ' ')}</span></div>{!mine && <button className="btn small" style={{width:'100%',marginTop:12}} onClick={() => { setShowClaim(item); setClaimMessage('') }}>Submit a claim</button>}</div></article>})}</div> : <div className="empty">No matching reports found. Try another search or create a report.</div>}
+          {itemsLoading ? <div className="empty">Loading campus reports…</div> : visibleItems.length ? <div className="grid">{visibleItems.map(item => { const lost = item.report_type === 'lost'; const mine = item.reporter_id === session.user.id; return <article className="item" key={item.id}><div className="item-top item-top-photo">
+  {item.photo_url ? <img className="item-photo" src={item.photo_url} alt={item.item_name || 'Reported item'} loading="lazy" onError={e => { e.currentTarget.style.display = 'none' }} /> :
+    <div className="item-placeholder">{item.category === 'Electronics' ? '📱' : item.category === 'Bags' ? '🎒' : item.category === 'Books' ? '📚' : item.category === 'ID Cards' ? '🪪' : '🔎'}</div>}
+  <span className={`pill ${lost ? '' : 'found'}`}>{lost ? 'LOST' : 'FOUND'}</span>
+</div><div className="item-body"><span className="eyebrow">{item.category}</span><h3>{item.item_name}</h3><p>⌖ {item.campus_location}</p>{item.description && <p>{item.description}</p>}<div className="item-foot"><span>{dateText(item.incident_date || item.created_at)}</span><span>{(item.status || 'reported').replaceAll('_', ' ')}</span></div>{!mine && (() => {
+  const myClaim = claims.find(
+    claim => claim.item_id === item.id
+  )
+
+  if (myClaim) {
+    return (
+      <div className="claim-status">
+        <span className={`pill ${myClaim.status === 'approved' ? 'approved' : myClaim.status === 'rejected' ? 'rejected' : 'pending'}`}>
+          {myClaim.items?.status === 'returned' ? 'ITEM COLLECTED' : myClaim.status === 'pending' ? 'CLAIM SUBMITTED' : myClaim.status === 'approved' ? 'CLAIM APPROVED' : myClaim.status === 'rejected' ? 'CLAIM REJECTED' : String(myClaim.status || 'submitted').toUpperCase()}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      className="btn small"
+      style={{width:'100%',marginTop:12}}
+      onClick={() => {
+        setShowClaim(item)
+        setClaimMessage('')
+      }}
+    >
+      Submit a claim
+    </button>
+  )
+})()}</div></article>})}</div> : <div className="empty">No matching reports found. Try another search or create a report.</div>}
         </section>
       </>}
-      {activeTab === 'My Claims' && <section className="section"><div className="section-head"><div><span className="eyebrow">CLAIM TRACKER</span><h2>My claim requests</h2><p>Track the review and collection status of your claims.</p></div><button className="btn secondary" onClick={loadMyClaims}>↻ Refresh</button></div>{claims.length ? <div className="table-wrap"><table><thead><tr><th>Item</th><th>Location</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody>{claims.map(claim => <tr key={claim.id}><td>{claim.items?.item_name || 'Item'}</td><td>{claim.items?.campus_location || '—'}</td><td>{dateText(claim.created_at)}</td><td>{claim.status}</td><td>{claim.status === 'approved' ? <button className="btn small" onClick={() => confirmCollection(claim)} disabled={busy}>Confirm received</button> : '—'}</td></tr>)}</tbody></table></div> : <div className="empty">You have not submitted any claims yet. Browse items to submit a claim.</div>}</section>}
+      {activeTab === 'Contact Officials' && <section className="section">
+        <div className="section-head"><div><span className="eyebrow">CAMPUS SUPPORT DESK</span><h2>{isStaff ? 'Department inbox' : 'Contact campus officials'}</h2><p>{isStaff ? 'Read student queries and reply securely.' : 'Contact the Central Lost & Found Office or a campus department. Official replies appear here.'}</p></div><button className="btn secondary" onClick={loadOfficeMessages} disabled={officeLoading}>Refresh</button></div>
+        {!isStaff && <form className="office-compose" onSubmit={submitOfficeMessage}>
+          <label>Office / department</label>
+          <select value={officeForm.department} onChange={e => setOfficeForm({...officeForm, department:e.target.value})}>
+            <option>Central Lost & Found Office</option><option>Engineering Office</option><option>Administration Office</option><option>Library</option><option>Hostel Office</option><option>Transport Office</option><option>Other Department</option>
+          </select>
+          <label>Subject</label><input required maxLength="120" value={officeForm.subject} onChange={e => setOfficeForm({...officeForm,subject:e.target.value})} placeholder="Message subject"/>
+          <label>Message</label><textarea required maxLength="2000" value={officeForm.message} onChange={e => setOfficeForm({...officeForm,message:e.target.value})} placeholder="Explain what help you need…"/>
+          <button className="btn" disabled={saving}>{saving ? 'Sending…' : 'Send message'}</button>
+        </form>}
+        <div className="office-list"><h3>{isStaff ? 'Student inbox' : 'Your messages'}</h3>
+          {officeLoading ? <div className="empty">Loading…</div> : officeMessages.length ? officeMessages.map(message => <article className="office-message" key={message.id}>
+            <div className="office-message-head"><div><strong>{message.subject}</strong><small>{message.department} · {dateText(message.created_at)}</small></div><span className={`pill ${message.status === 'answered' ? 'approved' : 'pending'}`}>{message.status || 'open'}</span></div>
+            <p className="office-message-body">{message.message}</p>
+            {message.staff_reply && <div className="office-reply"><strong>Official reply</strong><p>{message.staff_reply}</p><small>{message.replied_at ? dateText(message.replied_at) : ''}</small></div>}
+            {isStaff && <div className="office-reply-form"><textarea value={replyDrafts[message.id] || ''} onChange={e => setReplyDrafts({...replyDrafts,[message.id]:e.target.value})} placeholder="Write official reply…"/><button className="btn small" disabled={saving} onClick={() => replyOfficeMessage(message.id)}>Send reply</button></div>}
+          </article>) : <div className="empty">No messages yet.</div>}
+        </div>
+      </section>}
+
+      {activeTab === 'My Claims' && <section className="section"><div className="section-head"><div><span className="eyebrow">CLAIM TRACKER</span><h2>My claim requests</h2><p>Track the review and collection status of your claims.</p></div><button className="btn secondary" onClick={loadMyClaims}>↻ Refresh</button></div>{claims.length ? <div className="table-wrap"><table><thead><tr><th>Item</th><th>Location</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead><tbody>{claims.map(claim => <tr key={claim.id}><td>{claim.items?.item_name || 'Item'}</td><td>{claim.items?.campus_location || '—'}</td><td>{dateText(claim.created_at)}</td><td>{claim.status}</td><td>{claim.items?.status === 'returned' ? <span className="pill approved" style={{position:'static'}}>Collected</span> : claim.status === 'approved' ? <button className="btn small" onClick={() => confirmCollection(claim)} disabled={saving || busy}>Confirm received</button> : '—'}</td></tr>)}</tbody></table></div> : <div className="empty">You have not submitted any claims yet. Browse items to submit a claim.</div>}</section>}
 
       {activeTab === 'Staff Review' && isStaff && <section className="section"><div className="section-head"><div><span className="eyebrow">OFFICE WORKSPACE</span><h2>Claim review queue</h2><p>Review student requests and record item handovers.</p></div><button className="btn secondary" onClick={loadStaffClaims}>↻ Refresh</button></div>{staffClaims.length ? <div className="table-wrap"><table><thead><tr><th>Item</th><th>Claim message</th><th>Student ID</th><th>Status</th><th>Review</th></tr></thead><tbody>{staffClaims.map(claim => <tr key={claim.id}><td>{claim.items?.item_name || 'Item'}</td><td>{claim.claim_message}</td><td>{claim.claimant_id?.slice(0,8)}…</td><td>{claim.status}</td><td><div className="actions">{claim.status === 'pending' && <><button className="btn small" onClick={() => updateClaimStatus(claim,'approved')} disabled={busy}>Approve</button><button className="btn danger small" onClick={() => updateClaimStatus(claim,'rejected')} disabled={busy}>Reject</button></>}{claim.status === 'approved' && <button className="btn secondary small" onClick={() => setReviewClaim(claim)}>Record handover</button>}</div></td></tr>)}</tbody></table></div> : <div className="empty">No claim requests are available.</div>}</section>}
 
