@@ -486,8 +486,8 @@ const foundCount = items.filter(item => item.report_type === 'found'|| (item.rep
     <div className="item-placeholder">{item.category === 'Electronics' ? '📱' : item.category === 'Bags' ? '🎒' : item.category === 'Books' ? '📚' : item.category === 'ID Cards' ? '🪪' : '🔎'}</div>}
   <span className={`pill ${lost ? '' : 'found'}`}>{lost ? 'LOST' : 'FOUND'}</span>
 </div><div className="item-body"><span className="eyebrow">{item.category}</span><h3>{item.item_name}</h3><p>⌖ {item.campus_location}</p>{item.description && <p>{item.description}</p>}<div className="item-foot"><span>{dateText(item.incident_date || item.created_at)}</span><span>{(item.status || 'reported').replaceAll('_', ' ')}</span></div>{!mine && (() => {
-  const myClaim = claims.find(
-    claim => claim.item_id === item.id
+  const myClaim = (isStaff || isAdmin ? staffClaims : claims).find(
+  claim => claim.item_id === item.id
   )
 
   if (myClaim) {
