@@ -204,17 +204,23 @@ useEffect(() => {
     if (!showClaim || !session?.user) return
 
     const itemId = showClaim.id
-    const userId = session.user.id
+    // Admin-created claims belong to the student who originally reported the item.
+    const claimantId = isAdmin ? showClaim.reporter_id : session.user.id
+
+    if (!claimantId) {
+      setNotice('This item has no linked reporting student, so a claim cannot be assigned.')
+      return
+    }
+
     setSaving(true)
     setNotice('')
 
     try {
-      // Avoid creating a second claim for the same item from this account.
       const { data: existingClaim, error: checkError } = await supabase
         .from('claims')
         .select('id, status')
         .eq('item_id', itemId)
-        .eq('claimant_id', userId)
+        .eq('claimant_id', claimantId)
         .maybeSingle()
 
       if (checkError) throw checkError
@@ -223,7 +229,8 @@ useEffect(() => {
         setShowClaim(null)
         setClaimMessage('')
         await loadMyClaims()
-        setNotice(`You already submitted a claim for this item. Current status: ${existingClaim.status}.`)
+        await loadStaffClaims()
+        setNotice(`A claim already exists for this student and item. Current status: ${existingClaim.status}.`)
         return
       }
 
@@ -231,21 +238,22 @@ useEffect(() => {
         .from('claims')
         .insert({
           item_id: itemId,
-          claimant_id: userId,
-          claim_message: claimMessage.trim(),
-          status: 'pending',
+          claimant_id: claimantId,
+          claim_message: isAdmin
+            ? 'Claim submitted by campus administration on behalf of the original reporting student.'
+            : claimMessage.trim(),
+          status: 'pending'
         })
 
       if (insertError) throw insertError
 
       setShowClaim(null)
       setClaimMessage('')
-      const refreshed = await loadMyClaims()
+      await loadMyClaims()
       await loadStaffClaims()
-
-      setNotice(refreshed
-        ? 'Your claim has been submitted. You can track its status in My Claims.'
-        : 'Your claim was submitted, but the claim list could not refresh. Open My Claims and press Refresh.')
+      setNotice(isAdmin
+        ? 'Claim submitted and assigned to the original reporting student.'
+        : 'Your claim has been submitted. You can track its status in My Claims.')
     } catch (error) {
       setNotice(`Claim not submitted: ${cleanError(error)}`)
     } finally {
@@ -311,7 +319,7 @@ useEffect(() => {
 
       const { error: itemError } = await supabase
         .from('items')
-        .update({ status: 'ready_for_collection' })
+        .update({ status: 'verified' })
         .eq('id', reviewClaim.item_id)
       if (itemError) {
         setNotice(`Handover saved, but item status was not updated: ${cleanError(itemError)}`)
@@ -425,7 +433,7 @@ useEffect(() => {
     const matchesFilter = filter === 'All' || type === filter.toLowerCase()
     return query.includes(search.toLowerCase()) && matchesTab && matchesFilter
   }), [items, search, filter, activeTab, session?.user?.id])
-const foundCount = items.filter(item => item.report_type === 'found').length
+const foundCount = items.filter(item => item.report_type === 'found'|| (item.report_type === 'lost' && item.status === 'returned')).length
   const lostCount = items.filter(item => item.report_type === 'lost').length
   const myCount = items.filter(item => item.reporter_id === session?.user?.id).length
 
@@ -539,7 +547,7 @@ const foundCount = items.filter(item => item.report_type === 'found').length
   </div>
 {showReport && <div className="modal-bg" onClick={() => setShowReport(false)}><form className="modal" onSubmit={submitReport} onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">CAMPUS REPORT</span><h2>Report an item</h2></div><button type="button" className="close" onClick={() => setShowReport(false)}>×</button></div><div className="form-grid"><div><label>Report type</label><select value={report.report_type} onChange={e => setReport({...report,report_type:e.target.value})}><option value="lost">Lost</option><option value="found">Found</option></select></div><div><label>Category</label><select value={report.category} onChange={e => setReport({...report,category:e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div><div style={{gridColumn:'1/-1'}}><label>Item name</label><input required maxLength="100" value={report.item_name} onChange={e => setReport({...report,item_name:e.target.value})} placeholder="Example: Black water bottle"/></div><div><label>Campus location</label><input required maxLength="150" value={report.campus_location} onChange={e => setReport({...report,campus_location:e.target.value})} placeholder="Library, block, lab…"/></div><div><label>Date</label><input type="date" value={report.incident_date} onChange={e => setReport({...report,incident_date:e.target.value})}/></div><div style={{gridColumn:'1/-1'}}><label>Description</label><textarea maxLength="1000" value={report.description} onChange={e => setReport({...report,description:e.target.value})} placeholder="Describe the item. Keep unique proof private."/></div><div style={{gridColumn:'1/-1'}}><label>Photo (optional)</label><input type="file" accept="image/*" onChange={e => setReport({...report,photo:e.target.files?.[0] || null})}/></div></div><button className="btn full" disabled={saving}>{saving ? 'Submitting…' : 'Submit report'}</button><p className="notice-line">Photo upload requires a private Supabase Storage bucket named findit-items and suitable storage policies.</p></form></div>}
 
-  {showClaim && <div className="modal-bg" onClick={() => setShowClaim(null)}><form className="modal" onSubmit={submitClaim} onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">OWNERSHIP REQUEST</span><h2>Claim: {showClaim.item_name}</h2></div><button type="button" className="close" onClick={() => setShowClaim(null)}>×</button></div><p className="intro">Explain why you believe this item belongs to you. Do not post passwords, full ID numbers or sensitive personal information.</p><label>Claim message</label><textarea required maxLength="1000" value={claimMessage} onChange={e => setClaimMessage(e.target.value)} placeholder="Describe identifying details that staff can verify…"/><button className="btn full" disabled={saving}>{saving ? 'Submitting…' : 'Send claim for review'}</button></form></div>}
+  {showClaim && <div className="modal-bg" onClick={() => setShowClaim(null)}><form className="modal" onSubmit={submitClaim} onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">OWNERSHIP REQUEST</span><h2>Claim: {showClaim.item_name}</h2></div><button type="button" className="close" onClick={() => setShowClaim(null)}>×</button></div>{isAdmin ? <p className="intro">This claim will be assigned to the student who originally reported this item and will appear in that student's My Claims.</p> : <p className="intro">Explain why you believe this item belongs to you. Do not post passwords, full ID numbers or sensitive personal information.</p>}{!isAdmin && <><label>Claim message</label><textarea required maxLength="1000" value={claimMessage} onChange={e => setClaimMessage(e.target.value)} placeholder="Describe identifying details that staff can verify…"/> </>}<button className="btn full" disabled={saving}>{saving ? 'Submitting…' : isAdmin ? 'Submit claim for reporting student' : 'Send claim for review'}</button></form></div>}
 
   {showProfile && <div className="modal-bg" onClick={() => setShowProfile(false)}><section className="modal" onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">ACCOUNT DETAILS</span><h2>My Profile</h2></div><button className="close" onClick={() => setShowProfile(false)}>×</button></div><div className="profile-grid"><div className="profile-field"><small>Full name</small><strong>{profile?.full_name || profileName}</strong></div><div className="profile-field"><small>Registration number</small><strong>{profile?.registration_number || 'Not provided'}</strong></div><div className="profile-field"><small>Email</small><strong>{session.user.email}</strong></div><div className="profile-field"><small>Account role</small><strong>{profile?.role || 'student'}</strong></div><div className="profile-field"><small>Account created</small><strong>{dateText(session.user.created_at)}</strong></div><div className="profile-field"><small>User ID</small><strong>{session.user.id.slice(0,13)}…</strong></div></div><p className="notice-line">To correct your name or registration number, contact the campus FINDIT office.</p><button className="btn danger full" onClick={signOut} disabled={busy}>Sign out</button></section></div>}
 
